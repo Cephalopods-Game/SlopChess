@@ -1,9 +1,9 @@
-import { _decorator, Color, Component, ImageAsset, Node, resources, Sprite, SpriteFrame } from 'cc';
+import { _decorator, AudioSource, Color, Component, ImageAsset, Node, resources, Sprite, SpriteFrame } from 'cc';
 import { Tile } from './Tile';
 import { Board, BoardMode, Dir } from './Board';
 const { ccclass, property } = _decorator;
 
-enum SpriteFrameUrl {
+export enum SpriteFrameUrl {
 	p = 'Pawn/spriteFrame',
 	n = 'Knight/spriteFrame',
 	b = 'Bishop/spriteFrame',

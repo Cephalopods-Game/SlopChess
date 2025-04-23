@@ -1,9 +1,10 @@
 import { _decorator, CCClass, Color, Component, Node } from 'cc';
 import { custEventTarget } from './Event';
 import { Tile } from './Tile';
-import { Board } from './Board';
+import { Board, BoardMode } from './Board';
 import { Piece } from './Piece';
 import * as chessEngine from './engine/lib/js-chess-engine';
+import { Game } from './Game';
 
 export enum pType {
 	AI = 'AI',
@@ -11,10 +12,10 @@ export enum pType {
 }
 
 export class PlayerFactory {
-	getPlayer(type: pType): Player {
+	getPlayer(type: pType, level: number = 2): Player {
 		switch (type) {
 			case pType.AI:
-				const p = new AI();
+				const p = new AI(level);
 				return p;
 			case pType.HUMAN:
 				return new Player();
@@ -47,21 +48,30 @@ export class Player {
 	assignColor(color: Color): void {
 		this.color = color;
 	}
+
+	destroy(): void {}
 }
 
 export class AI extends Player {
-	constructor() {
+	level: number;
+	active: boolean = true;
+
+	constructor(level: number = 2) {
 		super();
 		custEventTarget.onNextTurn(this.makeMove, this);
 	}
 
-	makeMove(player: Player, board: Board): void {
-		if (this.color != player.color) return;
-		// this.makeRandomMove(board);
-		this.engineMove(board, 2);
+	destroy(): void {
+		this.active = false;
 	}
 
-	makeRandomMove(board: Board) {
+	makeMove(player: Player, board: Board, game: Game): void {
+		if (this.color != player.color || !this.active) return;
+		if (board.mode == BoardMode.mul) this.makeRandomMove(board, game);
+		else this.engineMove(board, this.level, game);
+	}
+
+	makeRandomMove(board: Board, game: Game) {
 		// get all tiles with YOUR COLOR
 		let tiles: Tile[] = [];
 		for (const row of board.tiles)
@@ -81,14 +91,23 @@ export class AI extends Player {
 				const to = board.tiles[coord.x][coord.y];
 				if (!to) continue;
 				if (tile?.getPiece()?.canMoveTo(board, tile, to)) {
-					setTimeout(() => custEventTarget.emitPlayerMove(this, tile, to), 100);
+					setTimeout(() => {
+						custEventTarget.emitPlayerMove(tile, to);
+						game.ws.send(
+							JSON.stringify({
+								type: 'message',
+								from: { x: tile.x, y: tile.y },
+								to: { x: to.x, y: to.y },
+							})
+						);
+					}, 100);
 					return;
 				}
 			}
 	}
 
 	// for 2p only
-	engineMove(board: Board, level: number = 2): void {
+	engineMove(board: Board, level: number = 2, game: Game): void {
 		const ownedTiles: Tile[] = [];
 		const pieces = {};
 		for (const row of board.tiles)
@@ -129,8 +148,8 @@ export class AI extends Player {
 				turn: this.color.equals(Color.WHITE) ? 'white' : 'black',
 				pieces: pieces,
 				isFinished: false,
-				check: false,
-				checkMate: false,
+				check: board.isInCheck(this.color),
+				checkMate: board.isCheckmate(this.color),
 				castling: {
 					whiteLong: false,
 					whiteShort: false,
@@ -141,15 +160,21 @@ export class AI extends Player {
 				halfMove: 0,
 				fullMove: 1,
 			},
-			2
+			level
 		);
 
 		const from = squareToXY(Object.keys(move)[0]);
 		const to = squareToXY(move[Object.keys(move)[0]]);
 
-		setTimeout(
-			() => custEventTarget.emitPlayerMove(this, board.tiles[from[0]][from[1]], board.tiles[to[0]][to[1]]),
-			100
-		);
+		setTimeout(() => {
+			custEventTarget.emitPlayerMove(board.tiles[from[0]][from[1]], board.tiles[to[0]][to[1]]);
+			game.ws.send(
+				JSON.stringify({
+					type: 'message',
+					from: { x: from[0], y: from[1] },
+					to: { x: to[0], y: to[1] },
+				})
+			);
+		}, 100);
 	}
 }

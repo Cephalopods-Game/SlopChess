@@ -214,7 +214,7 @@ export class Board extends Component {
 		for (let i = 0; i < this.tiles.length; i++) {
 			for (let j = 0; j < this.tiles[i].length; j++) {
 				const piece = this.tiles[i][j]?.getPiece();
-				if (piece && piece.type === 'k' && piece.color == color) {
+				if (piece && piece.type === 'k' && piece.color.equals(color)) {
 					kingTile = this.tiles[i][j];
 					break;
 				}
@@ -223,6 +223,7 @@ export class Board extends Component {
 
 		if (!kingTile) {
 			console.error('King not found on the board!', color);
+			// console.log(color.equals(Color.GRAY));
 			return true; // King not found, cannot determine check status
 		}
 
@@ -258,7 +259,7 @@ export class Board extends Component {
 		if (!this.isInCheck(color)) return false; // Not in check, so not checkmate
 
 		const tiles: Tile[] = [];
-		for (const row of this.tiles) for (const tile of row) if (tile?.getPiece()?.color === color) tiles.push(tile);
+		for (const row of this.tiles) for (const tile of row) if (tile?.getPiece()?.color?.equals(color)) tiles.push(tile);
 
 		// If still have valid move
 		if (this.hasMoveLeft(tiles)) return false;
@@ -280,7 +281,7 @@ export class Board extends Component {
 		if (this.isInCheck(color)) return false; // In check, so not stalemate
 
 		const tiles: Tile[] = [];
-		for (const row of this.tiles) for (const tile of row) if (tile?.getPiece()?.color === color) tiles.push(tile);
+		for (const row of this.tiles) for (const tile of row) if (tile?.getPiece()?.color?.equals(color)) tiles.push(tile);
 
 		// If still have valid move
 		if (this.hasMoveLeft(tiles)) return false;
