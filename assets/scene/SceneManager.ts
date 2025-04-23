@@ -1,4 +1,4 @@
-import { _decorator, Component, director, Node } from 'cc';
+import { _decorator, Component, director, game, Node } from 'cc';
 import { Game } from '../Game';
 import { Player } from '../Player';
 import { ReturnHome } from '../button/ReturnHome';
@@ -38,8 +38,22 @@ class SceneManager extends Component {
 		});
 	}
 
+	resume() {
+		director.loadScene('game', (err, data) => {
+			const sceneNode = director.getScene();
+			const game = sceneNode.getComponentInChildren(Game);
+			game.node.active = true;
+		});
+	}
+
+	pauseToMain() {
+		director.getScene().getComponentInChildren(Game).node.active = false;
+		director.loadScene('menu');
+	}
+
 	backToMainMenu() {
-		director.loadScene('menu', (err, data) => {});
+		game.restart();
+		// director.loadScene('menu', (err, data) => {});
 	}
 }
 

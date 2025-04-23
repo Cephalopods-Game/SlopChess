@@ -10,6 +10,7 @@ export class Tile extends Component {
 	piece: Piece | null = null;
 
 	color: Color = Color.YELLOW;
+	highLight: Color = Color.RED;
 
 	onLoad(): void {
 		this.piece = this.getComponentInChildren(Piece);
@@ -17,9 +18,13 @@ export class Tile extends Component {
 
 	start(): void {
 		this.node.on(Input.EventType.MOUSE_UP, this.onTileClicked, this);
+
 		custEventTarget.onNextTurn(() => {
 			if (!this.color.equals(Color.YELLOW)) {
 				this.glowSwitch();
+			}
+			if (!this.highLight.equals(Color.RED)) {
+				this.highLightSwitch();
 			}
 		}, this);
 	}
@@ -51,6 +56,15 @@ export class Tile extends Component {
 			const c = sprite.color.clone();
 			sprite.color = this.color.clone();
 			this.color = c;
+		}
+	}
+
+	highLightSwitch(): void {
+		const sprite = this.getComponent(Sprite);
+		if (sprite) {
+			const c = sprite.color.clone();
+			sprite.color = this.highLight.clone();
+			this.highLight = c;
 		}
 	}
 }

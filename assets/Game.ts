@@ -6,6 +6,7 @@ import {
 	director,
 	EventKeyboard,
 	EventMouse,
+	game,
 	input,
 	Input,
 	KeyCode,
@@ -38,6 +39,7 @@ export class Game extends Component {
 	onLoad() {
 		macro.ENABLE_WEBGL_ANTIALIAS = false;
 		profiler.hideStats();
+		director.addPersistRootNode(this.node);
 		this.board = this.node.getComponentInChildren(Board);
 	}
 
@@ -65,9 +67,9 @@ export class Game extends Component {
 							},
 							data.curIdx
 						);
-					}
+					} else this.initGame({ rand: false, '4p': false, level: 2 }, 0, true);
 				} else {
-					console.log('REPLACING AI WITH PLAYER AT IDX', data.curIdx);
+					if (data.curIdx == this.players.indexOf(this.user)) return;
 					this.players[data.curIdx].destroy();
 					const color = this.players[data.curIdx].color.clone();
 					this.players[data.curIdx] = this.playerFactory.getPlayer(pType.HUMAN);
@@ -90,6 +92,7 @@ export class Game extends Component {
 	initGame(
 		options: { rand: boolean; '4p': boolean; level?: number } = { rand: false, '4p': false, level: 2 },
 		playerIdx: number,
+		fromJoin: boolean = false,
 		player1: pType = pType.HUMAN,
 		player2: pType = pType.AI,
 		player3: pType = pType.AI,
@@ -97,6 +100,7 @@ export class Game extends Component {
 	) {
 		input.on(Input.EventType.MOUSE_UP, this.onLeftClickResetQueue, this);
 		input.on(Input.EventType.KEY_UP, this.onRButton, this);
+		input.on(Input.EventType.KEY_UP, this.onEscButton, this);
 		custEventTarget.onTileClicked(this.onPlayerTileClick, this);
 		custEventTarget.onPlayerMove(this.onPlayerMove, this);
 		custEventTarget.emitNextTurn(this.players[0], this.board, this);
@@ -133,7 +137,7 @@ export class Game extends Component {
 		this.user = this.players[playerIdx];
 		console.log(options);
 		console.log('default', options['4p'], options.rand);
-		if (playerIdx == 0) this.joinRoom('default', options['4p'], options.rand);
+		if (playerIdx == 0 && !fromJoin) this.joinRoom('default', options['4p'], options.rand);
 		this.setCameraPos();
 	}
 
@@ -151,7 +155,15 @@ export class Game extends Component {
 		}
 	}
 
+	onEscButton(event: EventKeyboard) {
+		if (event.keyCode === KeyCode.ESCAPE) {
+			game.restart();
+		}
+	}
+
 	onPlayerTileClick(tile: Tile) {
+		tile.highLightSwitch();
+
 		console.log(this.turn % this.players.length);
 		console.log(this.players.indexOf(this.user));
 		// not your turn
@@ -188,8 +200,7 @@ export class Game extends Component {
 
 	onPlayerMove(from: Tile, to: Tile) {
 		from.getPiece()?.canMoveTo(this.board, from, to);
-		if (to.getPiece()?.type) to.node.getComponentsInChildren(AudioSource)[1]?.play();
-		else to.node.getComponentsInChildren(AudioSource)[0]?.play();
+		to.node.getComponentsInChildren(AudioSource)[0]?.play();
 		to.setPiece(from.getPiece());
 		from.setPiece(null);
 		this.afterMoveUpdate();
