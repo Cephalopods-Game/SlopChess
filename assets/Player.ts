@@ -100,7 +100,7 @@ export class AI extends Player {
 								to: { x: to.x, y: to.y },
 							})
 						);
-					}, 100);
+					}, 1000);
 					return;
 				}
 			}
@@ -175,6 +175,6 @@ export class AI extends Player {
 					to: { x: to[0], y: to[1] },
 				})
 			);
-		}, 100);
+		}, 1000);
 	}
 }

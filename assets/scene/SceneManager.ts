@@ -2,6 +2,7 @@ import { _decorator, Component, director, game, Node } from 'cc';
 import { Game } from '../Game';
 import { Player } from '../Player';
 import { ReturnHome } from '../button/ReturnHome';
+import { Board } from '../Board';
 const { ccclass, property } = _decorator;
 
 @ccclass('SceneManager')

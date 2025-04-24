@@ -105,6 +105,9 @@ export class Board extends Component {
 				if ((i + j) % 2 !== 0) {
 					const sprite = tile.getComponent(Sprite);
 					if (sprite) sprite.color = Color.WHITE;
+				} else {
+					const sprite = tile.getComponent(Sprite);
+					if (sprite) sprite.color = Color.BLACK;
 				}
 				// add to tiles[][]
 				tile?.getComponent(Tile)?.setBoardPos(i, j);
@@ -127,6 +130,9 @@ export class Board extends Component {
 				if ((i + j) % 2 !== 0) {
 					const sprite = tile.getComponent(Sprite);
 					if (sprite) sprite.color = Color.WHITE;
+				} else {
+					const sprite = tile.getComponent(Sprite);
+					if (sprite) sprite.color = Color.BLACK;
 				}
 				// add to tiles[][]
 				tile?.getComponent(Tile)?.setBoardPos(i, j);
@@ -176,7 +182,7 @@ export class Board extends Component {
 
 	start(): void {}
 
-	initBoard(options: { rand: boolean; '4p': boolean } = { rand: false, '4p': false }): void {
+	initBoard(options: { rand: boolean; '4p': boolean } = { rand: false, '4p': false }, bR?: any): void {
 		if (options['4p']) {
 			this.tiles = new Array(14).fill(null).map(() => new Array(14).fill(null));
 			this.displayTiles = new Array(14).fill(null).map(() => new Array(14).fill(null));
@@ -187,8 +193,11 @@ export class Board extends Component {
 			this.mode = BoardMode.sing;
 		}
 
-		const backRank = this.getPieces(options.rand);
 		this.generateTiles(options['4p']);
+		let backRank: string[] = [];
+		if (!bR) backRank = this.getPieces(options.rand);
+		else backRank = bR;
+
 		this.generatePieces(options['4p'], backRank);
 	}
 

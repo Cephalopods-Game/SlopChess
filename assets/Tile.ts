@@ -16,16 +16,19 @@ export class Tile extends Component {
 		this.piece = this.getComponentInChildren(Piece);
 	}
 
+	setNormalColor(): void {
+		const sprite = this.node.getComponent(Sprite);
+		if ((this.x + this.y) % 2 === 0) {
+			sprite.color = Color.BLACK;
+			// console.log(sprite.color);
+		} else sprite.color = Color.WHITE;
+	}
+
 	start(): void {
 		this.node.on(Input.EventType.MOUSE_UP, this.onTileClicked, this);
 
 		custEventTarget.onNextTurn(() => {
-			if (!this.color.equals(Color.YELLOW)) {
-				this.glowSwitch();
-			}
-			if (!this.highLight.equals(Color.RED)) {
-				this.highLightSwitch();
-			}
+			this.setNormalColor();
 		}, this);
 	}
 
@@ -53,18 +56,14 @@ export class Tile extends Component {
 	glowSwitch(): void {
 		const sprite = this.getComponent(Sprite);
 		if (sprite) {
-			const c = sprite.color.clone();
-			sprite.color = this.color.clone();
-			this.color = c;
+			sprite.color = Color.YELLOW;
 		}
 	}
 
 	highLightSwitch(): void {
 		const sprite = this.getComponent(Sprite);
 		if (sprite) {
-			const c = sprite.color.clone();
-			sprite.color = this.highLight.clone();
-			this.highLight = c;
+			sprite.color = Color.RED;
 		}
 	}
 }

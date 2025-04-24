@@ -43,12 +43,13 @@ export class Game extends Component {
 		this.board = this.node.getComponentInChildren(Board);
 	}
 
-	joinRoom(room: string, mul: boolean = false, rand: boolean = false) {
+	joinRoom(room: string, mul: boolean = false, rand: boolean = false, bR: string[] = null) {
 		const sMul = mul;
 		const sRand = rand;
+		const sBR = bR;
 		this.ws = new WebSocket('ws://localhost:8080');
 		this.ws.onopen = () => {
-			this.ws.send(JSON.stringify({ type: 'join', room, mul: sMul, rand: sRand }));
+			this.ws.send(JSON.stringify({ type: 'join', room, mul: sMul, rand: sRand, bR: sBR }));
 			console.log(`Joined room ${room}`);
 		};
 
@@ -56,7 +57,7 @@ export class Game extends Component {
 			const data = JSON.parse(event.data);
 			console.log(data);
 			if (data.type == 'joined') {
-				console.log(`Idx ${data.curIdx} ${data.mul} ${data.rand}`);
+				console.log(`Idx ${data.curIdx} ${data.mul} ${data.rand} ${data.bR}`);
 
 				if (this.user == null) {
 					if (data.curIdx != 0) {
@@ -64,10 +65,13 @@ export class Game extends Component {
 							{
 								'4p': data.mul,
 								rand: data.rand,
+								bR: data.bR,
 							},
 							data.curIdx
 						);
-					} else this.initGame({ rand: false, '4p': false, level: 2 }, 0, true);
+					}
+					// fallback for joining without room
+					else this.initGame({ rand: false, '4p': false, level: 2 }, 0, true);
 				} else {
 					if (data.curIdx == this.players.indexOf(this.user)) return;
 					this.players[data.curIdx].destroy();
@@ -90,7 +94,12 @@ export class Game extends Component {
 	start() {}
 
 	initGame(
-		options: { rand: boolean; '4p': boolean; level?: number } = { rand: false, '4p': false, level: 2 },
+		options: { rand: boolean; '4p': boolean; level?: number; bR?: string[] } = {
+			rand: false,
+			'4p': false,
+			level: 2,
+			bR: null,
+		},
 		playerIdx: number,
 		fromJoin: boolean = false,
 		player1: pType = pType.HUMAN,
@@ -107,7 +116,7 @@ export class Game extends Component {
 
 		this.mode = options['4p'] ? BoardMode.mul : BoardMode.sing;
 		this.board.mode = this.mode;
-		this.board.initBoard(options);
+		this.board.initBoard(options, options.bR);
 
 		if (playerIdx != 0) {
 			player1 = pType.HUMAN;
@@ -137,7 +146,8 @@ export class Game extends Component {
 		this.user = this.players[playerIdx];
 		console.log(options);
 		console.log('default', options['4p'], options.rand);
-		if (playerIdx == 0 && !fromJoin) this.joinRoom('default', options['4p'], options.rand);
+		const getBR = this.board.tiles[0].filter((t) => t != null).map((t) => t.getPiece()?.type);
+		if (playerIdx == 0 && !fromJoin) this.joinRoom('default', options['4p'], options.rand, getBR);
 		this.setCameraPos();
 	}
 
@@ -162,23 +172,21 @@ export class Game extends Component {
 	}
 
 	onPlayerTileClick(tile: Tile) {
-		tile.highLightSwitch();
-
-		console.log(this.turn % this.players.length);
-		console.log(this.players.indexOf(this.user));
 		// not your turn
 		if (this.turn % this.players.length !== this.players.indexOf(this.user)) return;
-		console.log('is your turn');
 
 		// you cant tile that is not yours dumbass
 		if (tile.getPiece()?.color != this.user.color && this.userTileQueue.length === 0) {
 			return;
 		}
 		this.userTileQueue.push(tile);
+		tile.highLightSwitch();
 
 		if (this.userTileQueue.length === 2) {
 			const firstTile = this.userTileQueue[0];
 			const secondTile = this.userTileQueue[1];
+			firstTile.setNormalColor();
+			secondTile.setNormalColor();
 			// invalid move
 			if (!firstTile.getPiece().canMoveTo(this.board, firstTile, secondTile)) {
 				this.userTileQueue = [];
@@ -194,6 +202,7 @@ export class Game extends Component {
 			);
 			this.userTileQueue = [];
 		} else if (this.userTileQueue.length > 2) {
+			this.userTileQueue.map((u) => u.setNormalColor());
 			this.userTileQueue = [];
 		}
 	}
@@ -226,7 +235,12 @@ export class Game extends Component {
 				return;
 			}
 		});
-		if (this.players.length <= 1) sceneManager.showResult(this.players, this.losers);
+		if (this.players.length <= 1) {
+			this.ws.close();
+			this.ws = null;
+			this.node.active = false;
+			sceneManager.showResult(this.players, this.losers);
+		}
 	}
 
 	setCameraPos(): void {
